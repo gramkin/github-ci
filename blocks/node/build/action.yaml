@@ -1,0 +1,147 @@
+name: Build Node project
+author: 'MiLaboratories'
+description: |
+  Prepare agent for building a Node project.
+  Install Node specific version, download package, create cache e.t.c
+
+inputs:
+  app-name:
+    description: |
+      Application name in human-readable form.
+      As it is supposed to be shown in texts
+    type: string
+    required: false
+    default: ${{ github.repository }}
+  app-name-slug:
+    description: |
+      Application name slug (part of release file name)
+    type: string
+    required: true
+
+  build-version:
+    description: |
+       Set version number in 'package.json' file to given value.
+    type: string
+    required: false
+  build-script-name:
+    description: |
+      Name of script for application build
+    type: string
+    required: true
+    default: 'build'
+  build-max-attempts:
+    description: |
+      Maximum number of attempts for completing the build and release step
+    type: string
+    required: false
+    default: '1'
+  build-package-root:
+    description: Directory where NPM/Yarn commands should be run
+    type: string
+    required: false
+    default: '.'
+  skip-build:
+    description: Whether the action should execute the NPM build script before running 'electron-builder'
+    type: string
+    required: false
+    default: false
+  electron-build-args:
+    description: |
+      Other arguments to pass to the `electron-builder` command, e.g. configuration overrides
+    type: string
+    required: false
+    default: ''
+  is-vue-project:
+    description: |
+      This is vue-based project. Use 'vue-cli' toolkit
+    type: boolean
+    required: false
+    default: false
+  is-release:
+    description: |
+      Set If you would like to mark the current version as a release version.
+    type: boolean
+    required: false
+    default: false
+  token:
+    description: |
+      Copy "github_token" input variable to "GH_TOKEN" env variable (required by 'electron-builder')
+    type: string
+    required: true
+
+  mac_sign_cert:
+    description: |
+      base64-encoded p12 certificate file for the macOS
+    required: false
+
+  mac_sign_cert_pwd:
+    description: |
+      password to decrypt the p12 signing certificate for the macOS
+    required: false
+
+  win_sign_cert:
+    description: |
+      base64-encoded p12 certificate file for the Windows
+    required: false
+
+  win_sign_cert_pwd:
+    description: |
+      password to decrypt the p12 signing certificate for the Windows
+    required: false
+
+  node-version:
+    description: |
+      Node version to use.
+      Examples: '16.x', '14.x'
+    required: true
+
+  cache-version:
+    description: |
+      Simple hack, that allows to 'reset' cache for particular job.
+
+      Just change the value of this parameter and the next run will
+      not find build cache and will have to start from scratch.
+
+    required: false
+    default: 'v1'
+
+runs:
+  using: "composite"
+
+  steps:
+    - id: context
+      uses: milaboratory/github-ci/actions/context@v2
+
+    - name: Prepare env for Node application build
+      uses: milaboratory/github-ci/actions/node/prepare@v2
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache-version: ${{ inputs.cache-version }}
+
+    - name: Install node packages with npm
+      uses: milaboratory/github-ci/actions/shell@v2
+      with:
+        run: |
+         npm ci
+
+    - name: Patch package version
+      uses: milaboratory/github-ci/actions/node/patch-version@v2
+      with:
+        version: ${{ steps.context.outputs.current-version }}
+
+    - name: Build Electron application
+      uses: milaboratory/github-ci/actions/node/build-electron@v3
+      with:
+        build-version: ${{ steps.context.outputs.current-version }}
+        build-script-name: ${{ inputs.build-script-name }}
+        build-max-attempts: ${{ inputs.build-max-attempts }}
+        build-package-root: ${{ inputs.build-package-root }}
+        skip-build: ${{ inputs.skip-build }}
+        token: ${{ inputs.token }}
+        electron-build-args: ${{ inputs.electron-build-args }}
+        is-vue-project: ${{ inputs.is-vue-project }}
+        is-release: ${{ inputs.is-release }}
+        mac_sign_cert: ${{ inputs.mac_sign_cert }}
+        mac_sign_cert_pwd: ${{ inputs.mac_sign_cert_pwd }}
+        win_sign_cert: ${{ inputs.win_sign_cert }}
+        win_sign_cert_pwd: ${{ inputs.win_sign_cert_pwd }}
