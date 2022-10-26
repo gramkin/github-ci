@@ -224,6 +224,12 @@ on:
         type: string
         required: false
         default: ''
+      test-integration-python-version:
+        description: |
+           Version of Python to install
+        type: string
+        required: false
+        default: ''
 
       #
       # Docker distribution control
@@ -376,6 +382,37 @@ on:
         type: string
         required: false
         default: 'false'
+
+      #
+      # CDN redirect link control
+      #
+      cdn-redirect-s3:
+        description: |
+          Whether or not to enable the CDN link
+          to redirect to the latest build results.
+
+        type: boolean
+        required: false
+        default: false
+
+      cdn-redirect-s3-bucket-path:
+        description: |
+          The path to a zero-byte object on an S3 bucket
+
+        type: string
+        default: 'link/software/${{ github.event.repository.name }}'
+        required: false
+
+      cdn-redirect-s3-bucket-key:
+        description: |
+          The name of a zero-byte object.
+          In particular it should be a combination
+          of the application name, branch name and extention.
+
+        type: string
+        default: '${{ github.event.repository.name }}-${{ github.ref_name }}.zip'
+        required: false
+
 
       #
       # Library distribution control
@@ -598,7 +635,7 @@ jobs:
 
     steps:
       - id: context
-        uses: milaboratory/github-ci/actions/context@v2
+        uses: milaboratory/github-ci/actions/context@v3
 
     outputs:
       is-release: ${{ steps.context.outputs.is-release }}
@@ -611,7 +648,7 @@ jobs:
       - init
 
     steps:
-      - uses: milaboratory/github-ci/actions/env@v2
+      - uses: milaboratory/github-ci/actions/env@v3
         with:
           inputs: ${{ inputs.env }}
           secrets: ${{ secrets.env }}
@@ -620,13 +657,13 @@ jobs:
         with:
           submodules: ${{ inputs.checkout-submodules }}
 
-      - uses: milaboratory/github-ci/actions/git/crypt@v2
+      - uses: milaboratory/github-ci/actions/git/crypt@v3
         if: inputs.git-crypt-unlock
         with:
           gpg-key: ${{ secrets.GIT_CRYPT_GPG_KEY }}
           gpg-key-password: ${{ secrets.GIT_CRYPT_KEY_PASSWORD }}
 
-      - uses: milaboratory/github-ci/blocks/java/build@v2
+      - uses: milaboratory/github-ci/blocks/java/build@v3
         with:
           project: ${{ inputs.build-project }}
           project-dir: ${{ inputs.build-project-dir }}
@@ -651,7 +688,7 @@ jobs:
       - build
 
     steps:
-      - uses: milaboratory/github-ci/actions/env@v2
+      - uses: milaboratory/github-ci/actions/env@v3
         with:
           inputs: ${{ inputs.env }}
           secrets: ${{ secrets.env }}
@@ -660,14 +697,14 @@ jobs:
         with:
           submodules: ${{ inputs.checkout-submodules }}
 
-      - uses: milaboratory/github-ci/actions/git/crypt@v2
+      - uses: milaboratory/github-ci/actions/git/crypt@v3
         if: inputs.git-crypt-unlock
         with:
           gpg-key: ${{ secrets.GIT_CRYPT_GPG_KEY }}
           gpg-key-password: ${{ secrets.GIT_CRYPT_KEY_PASSWORD }}
 
       - id: test
-        uses: milaboratory/github-ci/blocks/java/test@v2
+        uses: milaboratory/github-ci/blocks/java/test@v3
         with:
           project: ${{ inputs.build-project }}
           project-dir: ${{ inputs.build-project-dir }}
@@ -711,7 +748,7 @@ jobs:
       - test-unit
 
     steps:
-      - uses: milaboratory/github-ci/blocks/notify/tests@v2
+      - uses: milaboratory/github-ci/blocks/notify/tests@v3
         with:
           telegram-target: ${{ secrets.TELEGRAM_NOTIFICATION_TARGET }}
           telegram-token: ${{ secrets.TELEGRAM_API_TOKEN }}
@@ -732,7 +769,7 @@ jobs:
       - build
 
     steps:
-      - uses: milaboratory/github-ci/actions/env@v2
+      - uses: milaboratory/github-ci/actions/env@v3
         with:
           inputs: ${{ inputs.env }}
           secrets: ${{ secrets.env }}
@@ -741,14 +778,14 @@ jobs:
         with:
           submodules: ${{ inputs.checkout-submodules }}
 
-      - uses: milaboratory/github-ci/actions/git/crypt@v2
+      - uses: milaboratory/github-ci/actions/git/crypt@v3
         if: inputs.git-crypt-unlock
         with:
           gpg-key: ${{ secrets.GIT_CRYPT_GPG_KEY }}
           gpg-key-password: ${{ secrets.GIT_CRYPT_KEY_PASSWORD }}
 
       - id: test
-        uses: milaboratory/github-ci/blocks/java/test@v2
+        uses: milaboratory/github-ci/blocks/java/test@v3
         with:
           project: ${{ inputs.build-project }}
           project-dir: ${{ inputs.build-project-dir }}
@@ -761,6 +798,8 @@ jobs:
           test-data-cache-enabled: ${{ inputs.test-integration-cache }}
           test-data-cache-paths: ${{ inputs.test-integration-cache-paths }}
           test-data-cache-key: ${{ inputs.test-integration-cache-key }}
+
+          python-version: ${{ inputs.test-integration-python-version }}
 
           properties: |
             mi-ci-stage=test
@@ -793,7 +832,7 @@ jobs:
       - test-integration
 
     steps:
-      - uses: milaboratory/github-ci/blocks/notify/tests@v2
+      - uses: milaboratory/github-ci/blocks/notify/tests@v3
         with:
           telegram-target: ${{ secrets.TELEGRAM_NOTIFICATION_TARGET }}
           telegram-token: ${{ secrets.TELEGRAM_API_TOKEN }}
@@ -814,7 +853,7 @@ jobs:
       - build
 
     steps:
-      - uses: milaboratory/github-ci/actions/env@v2
+      - uses: milaboratory/github-ci/actions/env@v3
         with:
           inputs: ${{ inputs.env }}
           secrets: ${{ secrets.env }}
@@ -823,13 +862,13 @@ jobs:
         with:
           submodules: ${{ inputs.checkout-submodules }}
 
-      - uses: milaboratory/github-ci/actions/git/crypt@v2
+      - uses: milaboratory/github-ci/actions/git/crypt@v3
         if: inputs.git-crypt-unlock
         with:
           gpg-key: ${{ secrets.GIT_CRYPT_GPG_KEY }}
           gpg-key-password: ${{ secrets.GIT_CRYPT_KEY_PASSWORD }}
 
-      - uses: milaboratory/github-ci/blocks/java/build@v2
+      - uses: milaboratory/github-ci/blocks/java/build@v3
         with:
           project: ${{ inputs.build-project }}
           project-dir: ${{ inputs.build-project-dir }}
@@ -852,7 +891,7 @@ jobs:
       - name: Upload to S3
         id: s3
         if: ${{ inputs.dist-archive-s3 }}
-        uses: milaboratory/github-ci/blocks/release/s3@v2
+        uses: milaboratory/github-ci/blocks/release/s3@v3
         with:
           artifact-name: ${{ inputs.product-name-slug }}
           add-version: ${{ inputs.dist-archive-s3-add-version }}
@@ -886,7 +925,7 @@ jobs:
       - build
 
     steps:
-      - uses: milaboratory/github-ci/actions/env@v2
+      - uses: milaboratory/github-ci/actions/env@v3
         with:
           inputs: ${{ inputs.env }}
           secrets: ${{ secrets.env }}
@@ -895,13 +934,13 @@ jobs:
         with:
           submodules: ${{ inputs.checkout-submodules }}
 
-      - uses: milaboratory/github-ci/actions/git/crypt@v2
+      - uses: milaboratory/github-ci/actions/git/crypt@v3
         if: inputs.git-crypt-unlock
         with:
           gpg-key: ${{ secrets.GIT_CRYPT_GPG_KEY }}
           gpg-key-password: ${{ secrets.GIT_CRYPT_KEY_PASSWORD }}
 
-      - uses: milaboratory/github-ci/blocks/java/build@v2
+      - uses: milaboratory/github-ci/blocks/java/build@v3
         with:
           project: ${{ inputs.build-project }}
           project-dir: ${{ inputs.build-project-dir }}
@@ -917,13 +956,13 @@ jobs:
           java-version: ${{ inputs.java-version }}
           java-distribution: ${{ inputs.java-distribution }}
 
-      - uses: milaboratory/github-ci/actions/helpers/default-value@v2
+      - uses: milaboratory/github-ci/actions/helpers/default-value@v3
         id: project
         with:
           value: ${{ inputs.dist-docker-image-name }}
           default: ${{ inputs.build-project }}
 
-      - uses: milaboratory/github-ci/blocks/java/publish/docker@v2
+      - uses: milaboratory/github-ci/blocks/java/publish/docker@v3
         id: docker-push
         with:
           project: ${{ steps.project.outputs.value }}
@@ -946,7 +985,7 @@ jobs:
       - build
 
     steps:
-      - uses: milaboratory/github-ci/actions/env@v2
+      - uses: milaboratory/github-ci/actions/env@v3
         with:
           inputs: ${{ inputs.env }}
           secrets: ${{ secrets.env }}
@@ -955,14 +994,14 @@ jobs:
         with:
           submodules: ${{ inputs.checkout-submodules }}
 
-      - uses: milaboratory/github-ci/actions/git/crypt@v2
+      - uses: milaboratory/github-ci/actions/git/crypt@v3
         if: inputs.git-crypt-unlock
         with:
           gpg-key: ${{ secrets.GIT_CRYPT_GPG_KEY }}
           gpg-key-password: ${{ secrets.GIT_CRYPT_KEY_PASSWORD }}
 
       - name: publish lib to dev
-        uses: milaboratory/github-ci/blocks/java/build@v2
+        uses: milaboratory/github-ci/blocks/java/build@v3
         with:
           project: ${{ inputs.build-project }}
           project-dir: ${{ inputs.build-project-dir }}
@@ -979,17 +1018,17 @@ jobs:
           java-distribution: ${{ inputs.java-distribution }}
 
       - id: props
-        uses: milaboratory/github-ci/actions/java/gradle/properties/read@v2
+        uses: milaboratory/github-ci/actions/java/gradle/properties/read@v3
         with:
           project-dir: ${{ inputs.build-project-dir }}
           project-name: ${{ inputs.build-project }}
 
       - id: context
-        uses: milaboratory/github-ci/actions/context@v2
+        uses: milaboratory/github-ci/actions/context@v3
 
       - name: Prepare JSON list of published libraries
         id: libs-list
-        uses: milaboratory/github-ci/actions/strings/json-list@v2
+        uses: milaboratory/github-ci/actions/strings/json-list@v3
         with:
           input: |-
             ${{ steps.props.outputs.group}}:${{ steps.props.outputs.name }}:${{ steps.context.outputs.current-version }}
@@ -1000,6 +1039,39 @@ jobs:
       started: 'true'
 
       libs-list: ${{ steps.libs-list.outputs.result }}
+
+  update-cdn-link:
+    name: Update the latest build link on the CDN
+    runs-on: ubuntu-latest
+
+    if: inputs.cdn-redirect-s3
+      &&  needs.build.result != 'cancelled'
+      &&  github.event.repository.name == 'mixcr'
+      &&  github.ref_name == 'develop'
+
+    needs:
+      - build
+      - distArchive
+
+    steps:
+      - id: cdn-string
+        uses: milaboratory/github-ci/actions/shell@v3
+        with:
+          dump-stdout: false
+          run: |
+            CDN_URL=$(echo '${{ needs.distArchive.outputs.s3-urls-json }}' | jq -r  -c '.[]')
+            ghwa_set_output "converted_cdn_url" "${CDN_URL}"
+
+      - uses: milaboratory/github-ci/blocks/update-cdn-link@v3
+        with:
+          cdn-redirect-link: ${{ fromJSON( steps.cdn-string.outputs.data ).converted_cdn_url }}
+          s3-key-id: ${{ secrets.AWS_KEY_ID }}
+          s3-key-secret: ${{ secrets.AWS_KEY_SECRET }}
+          s3-region: ${{ inputs.dist-archive-s3-region }}
+          s3-bucket: ${{ inputs.dist-archive-s3-bucket }}
+          s3-bucket-path: ${{ inputs.cdn-redirect-s3-bucket-path }}
+          s3-bucket-key: ${{ inputs.cdn-redirect-s3-bucket-key }}
+
 
   notify-build:
     name: Notify build
@@ -1020,7 +1092,7 @@ jobs:
       - distLibrary
 
     steps:
-      - uses: milaboratory/github-ci/blocks/notify/build@v2
+      - uses: milaboratory/github-ci/blocks/notify/build@v3
         with:
           telegram-target: ${{ secrets.TELEGRAM_NOTIFICATION_TARGET }}
           telegram-token: ${{ secrets.TELEGRAM_API_TOKEN }}
@@ -1051,12 +1123,12 @@ jobs:
 
     if: always()
       && fromJSON(needs.init.outputs.is-release)
-      
+
       && needs.build.result       != 'failure'
       && needs.distDocker.result  != 'failure'
       && needs.distArchive.result != 'failure'
       && needs.distLibrary.result != 'failure'
-      
+
       && (
            needs.distDocker.result  != 'skipped'
         || needs.distArchive.result != 'skipped'
@@ -1086,7 +1158,7 @@ jobs:
       - notify-test-integration
 
     steps:
-      - uses: milaboratory/github-ci/blocks/notify/review-required@v2
+      - uses: milaboratory/github-ci/blocks/notify/review-required@v3
         with:
           telegram-target: ${{ secrets.TELEGRAM_NOTIFICATION_TARGET }}
           telegram-token: ${{ secrets.TELEGRAM_API_TOKEN }}
@@ -1127,7 +1199,7 @@ jobs:
 
     steps:
       - id: context
-        uses: milaboratory/github-ci/actions/context@v2
+        uses: milaboratory/github-ci/actions/context@v3
 
       - uses: actions/download-artifact@v2
         if: inputs.dist-archive
@@ -1136,7 +1208,7 @@ jobs:
           path: release-files
 
       - name: Create release
-        uses: milaboratory/github-ci/actions/release/create@v2
+        uses: milaboratory/github-ci/actions/release/create@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -1164,7 +1236,7 @@ jobs:
     steps:
       - id: s3
         name: Upload to S3
-        uses: milaboratory/github-ci/blocks/release/s3@v2
+        uses: milaboratory/github-ci/blocks/release/s3@v3
         with:
           artifact-name: ${{ inputs.product-name-slug }}
           add-version: ${{ inputs.release-s3-add-version }}
@@ -1197,7 +1269,7 @@ jobs:
       - release
 
     steps:
-      - uses: milaboratory/github-ci/actions/env@v2
+      - uses: milaboratory/github-ci/actions/env@v3
         with:
           inputs: ${{ inputs.env }}
           secrets: ${{ secrets.env }}
@@ -1206,14 +1278,14 @@ jobs:
         with:
           submodules: ${{ inputs.checkout-submodules }}
 
-      - uses: milaboratory/github-ci/actions/git/crypt@v2
+      - uses: milaboratory/github-ci/actions/git/crypt@v3
         if: inputs.git-crypt-unlock
         with:
           gpg-key: ${{ secrets.GIT_CRYPT_GPG_KEY }}
           gpg-key-password: ${{ secrets.GIT_CRYPT_KEY_PASSWORD }}
 
       - name: publish lib
-        uses: milaboratory/github-ci/blocks/java/build@v2
+        uses: milaboratory/github-ci/blocks/java/build@v3
         with:
           project: ${{ inputs.build-project }}
           project-dir: ${{ inputs.build-project-dir }}
@@ -1230,17 +1302,17 @@ jobs:
           java-distribution: ${{ inputs.java-distribution }}
 
       - id: props
-        uses: milaboratory/github-ci/actions/java/gradle/properties/read@v2
+        uses: milaboratory/github-ci/actions/java/gradle/properties/read@v3
         with:
           project-dir: ${{ inputs.build-project-dir }}
           project-name: ${{ inputs.build-project }}
 
       - id: context
-        uses: milaboratory/github-ci/actions/context@v2
+        uses: milaboratory/github-ci/actions/context@v3
 
       - name: Prepare JSON list of published libraries
         id: libs-list
-        uses: milaboratory/github-ci/actions/strings/json-list@v2
+        uses: milaboratory/github-ci/actions/strings/json-list@v3
         with:
           input: |-
             ${{ steps.props.outputs.group}}:${{ steps.props.outputs.name }}:${{ steps.context.outputs.current-version }}
@@ -1266,7 +1338,7 @@ jobs:
       - publish-release-lib
 
     steps:
-      - uses: milaboratory/github-ci/blocks/notify/release@v2
+      - uses: milaboratory/github-ci/blocks/notify/release@v3
         with:
           telegram-target: ${{ secrets.TELEGRAM_NOTIFICATION_TARGET }}
           telegram-token: ${{ secrets.TELEGRAM_API_TOKEN }}
