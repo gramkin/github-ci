@@ -66,8 +66,8 @@ function ghwa_escape() {
 #
 function ghwa_set_output() {
   local _name="${1}"
-  local _value
-  _value="$(ghwa_escape "${2}")"
+  local _value="${2}"
+  #_value="$(ghwa_escape "${2}")"
 
   echo "${_name}=${_value}" >> "${GITHUB_OUTPUT}" 
 }
