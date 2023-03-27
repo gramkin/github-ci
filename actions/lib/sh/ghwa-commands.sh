@@ -66,10 +66,14 @@ function ghwa_escape() {
 #
 function ghwa_set_output() {
   local _name="${1}"
-  local _value
-  _value="$(ghwa_escape "${2}")"
+  local _value="${2}"
+  local _eof_marker="${3:-EndOfValue}"
 
-  echo "${_name}=${_value}" >> "${GITHUB_OUTPUT}" 
+  {
+    echo "${_name}<<${_eof_marker}"
+    echo "${_value}"
+    echo "${_eof_marker}"
+  } >> "${GITHUB_OUTPUT}"
 }
 
 function ghwa_set_output_old() {
