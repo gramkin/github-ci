@@ -46,10 +46,16 @@ exports.latestVersionTag = latestVersionTag;
 function isBranchHead() {
     return __awaiter(this, void 0, void 0, function* () {
         const refType = process.env.GITHUB_REF_TYPE;
-        const refName = process.env.GITHUB_REF_NAME;
         const currentSha = process.env.GITHUB_SHA;
+        const eventName = process.env.GITHUB_EVENT_NAME;
         if (refType !== 'branch') {
             return false;
+        }
+        if ( eventName === 'pull_request') {
+            // For pull requests get refName form the head ref or source branch
+            const refName = process.env.GITHUB_HEAD_REF as string;
+        } else {
+            const refName = process.env.GITHUB_REF_NAME as string;
         }
         yield milib_1.git.fetch({
             deepen: 1,
